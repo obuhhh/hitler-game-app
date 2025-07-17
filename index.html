@@ -112,16 +112,12 @@
             });
         }
 
-        // --- НОВА ЛОГІКА ДЛЯ КНОПОК ---
+        // Логіка для кнопок
         function prepareAction(action, value, buttonText) {
-            // Зберігаємо обрану дію
             selectedAction = { action, value };
-
-            // Оновлюємо головну кнопку
             tg.MainButton.setText(buttonText);
             tg.MainButton.show();
 
-            // Візуально виділяємо кнопку
             document.getElementById('vote-ja-btn').classList.remove('selected');
             document.getElementById('vote-nein-btn').classList.remove('selected');
             if (value === 'ja') {
@@ -131,13 +127,19 @@
             }
         }
 
-        // Обробник для головної кнопки Telegram
+        // --- ОНОВЛЕНИЙ ОБРОБНИК ГОЛОВНОЇ КНОПКИ ---
         tg.onEvent('mainButtonClicked', function () {
             if (selectedAction) {
                 const jsonString = JSON.stringify(selectedAction);
+
+                // --- ДІАГНОСТИЧНЕ СПОВІЩЕННЯ ---
+                // Показуємо, що саме ми намагаємось надіслати
+                tg.showAlert(`Надсилаю дані:\n\n${jsonString}`);
+
                 tg.sendData(jsonString);
-                // Закриваємо додаток після надсилання
-                tg.close();
+                // tg.close(); // Тимчасово не закриваємо, щоб побачити сповіщення
+            } else {
+                tg.showAlert("Помилка: не обрано жодної дії.");
             }
         });
 
@@ -168,7 +170,7 @@
             }
         }
 
-        // Обробники кнопок тепер готують дію, а не надсилають її
+        // Обробники кнопок
         document.getElementById('vote-ja-btn').addEventListener('click', () => prepareAction('vote', 'ja', 'Підтвердити: Ja!'));
         document.getElementById('vote-nein-btn').addEventListener('click', () => prepareAction('vote', 'nein', 'Підтвердити: Nein!'));
 
