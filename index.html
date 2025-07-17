@@ -4,189 +4,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Таємний Гітлер</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Таємний Гітлер (Debug Mode)</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --tg-theme-bg-color: #1a202c;
-            --tg-theme-text-color: #e2e8f0;
-            --tg-theme-button-color: #4a5568;
-            --tg-theme-button-text-color: #e2e8f0;
-        }
-
         body {
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            margin: 0;
+            background-color: #1a202c;
+            color: #e2e8f0;
+            font-family: sans-serif;
+            text-align: center;
+            padding: 20px;
         }
 
-        .policy-card {
-            border: 2px solid;
-        }
-
-        .liberal {
-            border-color: #4299e1;
-            background-color: #2b6cb0;
-        }
-
-        .fascist {
-            border-color: #e53e3e;
-            background-color: #c53030;
-        }
-
-        .policy-card.empty {
+        .button {
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            border: 2px solid #4a5568;
             background-color: #2d3748;
-            border-color: #4a5568;
+            color: #e2e8f0;
+            margin: 10px 0;
         }
 
-        .player-card {
-            background-color: #2d3748;
-        }
-
-        .action-button {
-            background-color: var(--tg-theme-button-color);
-            color: var(--tg-theme-button-text-color);
-            transition: all 0.2s;
-            border: 2px solid transparent;
-        }
-
-        .action-button.selected {
+        .button.selected {
             border-color: #63b3ed;
             transform: scale(1.05);
+        }
+
+        #log {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #a0aec0;
+            text-align: left;
+            background-color: #2d3748;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
     </style>
 </head>
 
-<body class="p-4">
+<body>
 
-    <div id="main-container" class="max-w-md mx-auto">
-        <header class="text-center mb-4">
-            <h1 class="text-2xl font-bold">Таємний Гітлер</h1>
-            <p id="user-info" class="text-sm text-gray-400">Завантаження...</p>
-        </header>
+    <h1>Діагностика</h1>
+    <p>Натисніть кнопку, а потім головну кнопку Telegram внизу.</p>
 
-        <!-- Ігрове поле (статичне для прикладу) -->
-        <section id="game-board" class="mb-6">
-            <!-- ... (код ігрового поля без змін) ... -->
-        </section>
+    <button id="vote-ja-btn" class="button">Голосувати "Ja!"</button>
+    <button id="vote-nein-btn" class="button">Голосувати "Nein!"</button>
 
-        <!-- Гравці (буде заповнено динамічно) -->
-        <section id="players-section" class="mb-6">
-            <h2 class="text-lg font-semibold mb-2">Гравці</h2>
-            <div id="players-list" class="space-y-2">
-                <p class="text-gray-400">Очікування даних про гравців...</p>
-            </div>
-        </section>
-
-        <!-- Панель дій -->
-        <section id="actions">
-            <h2 class="text-lg font-semibold mb-2">Ваші дії</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <button id="vote-ja-btn" class="action-button p-4 rounded-lg font-bold text-green-400">Голосувати
-                    "Ja!"</button>
-                <button id="vote-nein-btn" class="action-button p-4 rounded-lg font-bold text-red-400">Голосувати
-                    "Nein!"</button>
-            </div>
-        </section>
-    </div>
+    <div id="log">Логи ініціалізації:</div>
 
     <script>
         const tg = window.Telegram.WebApp;
+        const logDiv = document.getElementById('log');
         let selectedAction = null;
 
-        // Функція для рендерингу списку гравців
-        function renderPlayers(players) {
-            const playersListDiv = document.getElementById('players-list');
-            playersListDiv.innerHTML = '';
-            if (!players || players.length === 0) {
-                playersListDiv.innerHTML = '<p class="text-gray-400">Ще немає гравців.</p>';
-                return;
+        function log(message) {
+            console.log(message);
+            logDiv.innerHTML += `\n- ${message}`;
+        }
+
+        // 1. Починаємо ініціалізацію
+        try {
+            log("Скрипт почав виконуватися.");
+
+            // Перевіряємо, чи існує об'єкт Telegram
+            if (typeof tg === 'undefined') {
+                log("ПОМИЛКА: window.Telegram.WebApp не знайдено!");
+                throw new Error("Telegram WebApp object is not available.");
             }
-            players.forEach(player => {
-                const playerDiv = document.createElement('div');
-                playerDiv.className = 'player-card p-3 rounded-lg flex justify-between items-center';
-                playerDiv.innerHTML = `<span>${player.full_name}</span> <span class="text-xs text-gray-400">ID: ${player.user_id}</span>`;
-                playersListDiv.appendChild(playerDiv);
+            log("Об'єкт 'tg' успішно знайдено.");
+
+            // Включаємо кнопку закриття та вимикаємо підтвердження
+            tg.enableClosingConfirmation();
+            log("Closing confirmation enabled (default).");
+
+            // Цей обробник має спрацювати, коли ми натиснемо головну кнопку
+            tg.onEvent('mainButtonClicked', function () {
+                log("Подія 'mainButtonClicked' спрацювала!");
+                if (!selectedAction) {
+                    tg.showAlert("Дія не обрана. Спершу натисніть 'Ja' або 'Nein'.");
+                    log("Помилка: mainButtonClicked без обраної дії.");
+                    return;
+                }
+
+                try {
+                    const jsonString = JSON.stringify(selectedAction);
+                    log(`Намагаюся надіслати дані: ${jsonString}`);
+
+                    // Ключовий момент: надсилаємо дані
+                    tg.sendData(jsonString);
+
+                    // Цей лог може не з'явитися, якщо sendData негайно закриє додаток, і це нормально
+                    log("tg.sendData() було викликано. Очікування закриття...");
+
+                } catch (e) {
+                    log(`КРИТИЧНА ПОМИЛКА під час надсилання: ${e.message}`);
+                    tg.showAlert(`Критична помилка: ${e.message}`);
+                }
             });
-        }
+            log("Обробник 'mainButtonClicked' встановлено.");
 
-        // Логіка для кнопок
-        function prepareAction(action, value, buttonText) {
-            selectedAction = { action, value };
-            tg.MainButton.setText(buttonText);
-            tg.MainButton.show();
-
-            document.getElementById('vote-ja-btn').classList.remove('selected');
-            document.getElementById('vote-nein-btn').classList.remove('selected');
-            if (value === 'ja') {
+            // Обробники для наших кнопок
+            document.getElementById('vote-ja-btn').addEventListener('click', function () {
+                log("Натиснуто кнопку 'Ja!'.");
+                selectedAction = { action: 'vote', value: 'ja' };
                 document.getElementById('vote-ja-btn').classList.add('selected');
-            } else {
+                document.getElementById('vote-nein-btn').classList.remove('selected');
+                tg.MainButton.setText("Підтвердити: Ja!");
+                tg.MainButton.show();
+                log("Головну кнопку налаштовано для 'Ja!'.");
+            });
+
+            document.getElementById('vote-nein-btn').addEventListener('click', function () {
+                log("Натиснуто кнопку 'Nein!'.");
+                selectedAction = { action: 'vote', value: 'nein' };
                 document.getElementById('vote-nein-btn').classList.add('selected');
+                document.getElementById('vote-ja-btn').classList.remove('selected');
+                tg.MainButton.setText("Підтвердити: Nein!");
+                tg.MainButton.show();
+                log("Головну кнопку налаштовано для 'Nein!'.");
+            });
+            log("Обробники кнопок 'Ja/Nein' встановлено.");
+
+            // Останній крок ініціалізації
+            tg.ready();
+            log("tg.ready() викликано. Додаток готовий.");
+            tg.expand();
+            log("tg.expand() викликано.");
+
+        } catch (error) {
+            log(`ГЛОБАЛЬНА ПОМИЛКА: ${error.message}`);
+            // Показуємо сповіщення, якщо щось пішло не так на самому початку
+            if (tg && tg.showAlert) {
+                tg.showAlert(`Помилка ініціалізації: ${error.message}`);
             }
         }
-
-        // --- ОНОВЛЕНИЙ ОБРОБНИК ГОЛОВНОЇ КНОПКИ (З НАДІЙНИМ ЗАКРИТТЯМ) ---
-        tg.onEvent('mainButtonClicked', function () {
-            // Перевіряємо, чи була обрана дія
-            if (!selectedAction) {
-                tg.showAlert("Помилка: дія не обрана. Будь ласка, натисніть 'Ja!' або 'Nein!' ще раз.");
-                return;
-            }
-
-            try {
-                const jsonString = JSON.stringify(selectedAction);
-
-                // 1. Надсилаємо дані боту
-                tg.sendData(jsonString);
-
-                // 2. Явно закриваємо Mini App.
-                // Документація каже, що sendData закриває додаток, але явний виклик 
-                // tg.close() часто вирішує проблеми на різних клієнтах Telegram.
-                // Після цього виклику вікно має закритися, а дані — надійти на бекенд.
-                tg.close();
-
-            } catch (e) {
-                // Цей блок спрацює, якщо виникне помилка в самому JavaScript
-                console.error("Помилка в обробнику mainButtonClicked:", e);
-                tg.showAlert(`Критична помилка на стороні клієнта: ${e.message}`);
-            }
-        });
-
-
-        // Головна функція ініціалізації
-        function initializeApp() {
-            try {
-                tg.ready();
-                tg.expand();
-
-                const userInfo = document.getElementById('user-info');
-                if (tg.initDataUnsafe.user) {
-                    userInfo.textContent = `Гравець: ${tg.initDataUnsafe.user.first_name}`;
-                }
-
-                const urlParams = new URLSearchParams(window.location.search);
-                const gameStateParam = urlParams.get('game_state');
-                if (gameStateParam) {
-                    const decodedGameState = decodeURIComponent(gameStateParam);
-                    const gameState = JSON.parse(decodedGameState);
-                    renderPlayers(gameState.players);
-                } else {
-                    renderPlayers([]);
-                }
-            } catch (e) {
-                console.error("Помилка ініціалізації:", e);
-                tg.showAlert(`Помилка ініціалізації: ${e.message}`);
-            }
-        }
-
-        // Обробники кнопок
-        document.getElementById('vote-ja-btn').addEventListener('click', () => prepareAction('vote', 'ja', 'Підтвердити: Ja!'));
-        document.getElementById('vote-nein-btn').addEventListener('click', () => prepareAction('vote', 'nein', 'Підтвердити: Nein!'));
-
-        // Запускаємо ініціалізацію
-        initializeApp();
     </script>
 </body>
 
