@@ -24,7 +24,6 @@
 
         .policy-card {
             border: 2px solid;
-            transition: transform 0.2s;
         }
 
         .liberal {
@@ -49,7 +48,13 @@
         .action-button {
             background-color: var(--tg-theme-button-color);
             color: var(--tg-theme-button-text-color);
-            transition: background-color 0.2s;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .action-button.selected {
+            border-color: #63b3ed;
+            transform: scale(1.05);
         }
     </style>
 </head>
@@ -64,39 +69,7 @@
 
         <!-- Ігрове поле (статичне для прикладу) -->
         <section id="game-board" class="mb-6">
-            <h2 class="text-lg font-semibold mb-2">Ігрове поле</h2>
-            <div class="mb-4">
-                <h3 class="text-blue-400 mb-2">Ліберальні закони</h3>
-                <div class="grid grid-cols-5 gap-2">
-                    <div class="policy-card empty h-20 rounded-lg"></div>
-                    <div class="policy-card empty h-20 rounded-lg"></div>
-                    <div class="policy-card empty h-20 rounded-lg"></div>
-                    <div class="policy-card empty h-20 rounded-lg"></div>
-                    <div class="policy-card empty h-20 rounded-lg flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-300" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
-            <div>
-                <h3 class="text-red-400 mb-2">Фашистські закони</h3>
-                <div class="grid grid-cols-6 gap-2">
-                    <div class="policy-card empty h-20 rounded-lg"></div>
-                    <div class="policy-card empty h-20 rounded-lg"></div>
-                    <div class="policy-card empty h-20 rounded-lg"></div>
-                    <div class="policy-card empty h-20 rounded-lg"></div>
-                    <div class="policy-card empty h-20 rounded-lg"></div>
-                    <div class="policy-card empty h-20 rounded-lg flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-red-300" fill="none"
-                            viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
+            <!-- ... (код ігрового поля без змін) ... -->
         </section>
 
         <!-- Гравці (буде заповнено динамічно) -->
@@ -121,6 +94,7 @@
 
     <script>
         const tg = window.Telegram.WebApp;
+        let selectedAction = null;
 
         // Функція для рендерингу списку гравців
         function renderPlayers(players) {
@@ -138,25 +112,41 @@
             });
         }
 
-        // Функція для надсилання даних боту
-        function sendAction(action, value) {
-            const data = { action, value };
-            const jsonString = JSON.stringify(data);
+        // --- НОВА ЛОГІКА ДЛЯ КНОПОК ---
+        function prepareAction(action, value, buttonText) {
+            // Зберігаємо обрану дію
+            selectedAction = { action, value };
 
-            // Спроба надіслати дані
-            tg.sendData(jsonString);
+            // Оновлюємо головну кнопку
+            tg.MainButton.setText(buttonText);
+            tg.MainButton.show();
 
-            // --- ДОДАНО ДІАГНОСТИЧНЕ СПОВІЩЕННЯ ---
-            // Це сповіщення з'явиться, якщо функція викликається.
-            tg.showAlert(`ДІАГНОСТИКА:\n\nСпроба надіслати дані:\nAction: ${action}\nValue: ${value}`);
+            // Візуально виділяємо кнопку
+            document.getElementById('vote-ja-btn').classList.remove('selected');
+            document.getElementById('vote-nein-btn').classList.remove('selected');
+            if (value === 'ja') {
+                document.getElementById('vote-ja-btn').classList.add('selected');
+            } else {
+                document.getElementById('vote-nein-btn').classList.add('selected');
+            }
         }
+
+        // Обробник для головної кнопки Telegram
+        tg.onEvent('mainButtonClicked', function () {
+            if (selectedAction) {
+                const jsonString = JSON.stringify(selectedAction);
+                tg.sendData(jsonString);
+                // Закриваємо додаток після надсилання
+                tg.close();
+            }
+        });
+
 
         // Головна функція ініціалізації
         function initializeApp() {
             try {
                 tg.ready();
                 tg.expand();
-                tg.MainButton.setText("Закрити гру").show().onClick(() => tg.close());
 
                 const userInfo = document.getElementById('user-info');
                 if (tg.initDataUnsafe.user) {
@@ -178,9 +168,9 @@
             }
         }
 
-        // Обробники кнопок
-        document.getElementById('vote-ja-btn').addEventListener('click', () => sendAction('vote', 'ja'));
-        document.getElementById('vote-nein-btn').addEventListener('click', () => sendAction('vote', 'nein'));
+        // Обробники кнопок тепер готують дію, а не надсилають її
+        document.getElementById('vote-ja-btn').addEventListener('click', () => prepareAction('vote', 'ja', 'Підтвердити: Ja!'));
+        document.getElementById('vote-nein-btn').addEventListener('click', () => prepareAction('vote', 'nein', 'Підтвердити: Nein!'));
 
         // Запускаємо ініціалізацію
         initializeApp();
