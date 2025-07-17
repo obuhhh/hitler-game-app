@@ -3,15 +3,23 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Таємний Гітлер</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        :root {
+            --tg-theme-bg-color: #1a202c;
+            --tg-theme-text-color: #e2e8f0;
+            --tg-theme-button-color: #4a5568;
+            --tg-theme-button-text-color: #e2e8f0;
+        }
+
         body {
-            background-color: #1a202c;
-            color: #e2e8f0;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
         }
 
         .policy-card {
@@ -39,12 +47,9 @@
         }
 
         .action-button {
-            background-color: #4a5568;
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
             transition: background-color 0.2s;
-        }
-
-        .action-button:hover {
-            background-color: #2d3748;
         }
     </style>
 </head>
@@ -54,18 +59,17 @@
     <div id="main-container" class="max-w-md mx-auto">
         <header class="text-center mb-4">
             <h1 class="text-2xl font-bold">Таємний Гітлер</h1>
-            <p id="user-info" class="text-sm text-gray-400">Завантаження даних...</p>
+            <p id="user-info" class="text-sm text-gray-400">Завантаження...</p>
         </header>
 
-        <!-- Ігрове поле -->
+        <!-- Ігрове поле (статичне для прикладу) -->
         <section id="game-board" class="mb-6">
             <h2 class="text-lg font-semibold mb-2">Ігрове поле</h2>
-            <!-- Ліберальні закони -->
             <div class="mb-4">
                 <h3 class="text-blue-400 mb-2">Ліберальні закони</h3>
                 <div class="grid grid-cols-5 gap-2">
-                    <div class="policy-card liberal h-20 rounded-lg"></div>
-                    <div class="policy-card liberal h-20 rounded-lg"></div>
+                    <div class="policy-card empty h-20 rounded-lg"></div>
+                    <div class="policy-card empty h-20 rounded-lg"></div>
                     <div class="policy-card empty h-20 rounded-lg"></div>
                     <div class="policy-card empty h-20 rounded-lg"></div>
                     <div class="policy-card empty h-20 rounded-lg flex items-center justify-center">
@@ -77,13 +81,12 @@
                     </div>
                 </div>
             </div>
-            <!-- Фашистські закони -->
             <div>
                 <h3 class="text-red-400 mb-2">Фашистські закони</h3>
                 <div class="grid grid-cols-6 gap-2">
                     <div class="policy-card empty h-20 rounded-lg"></div>
                     <div class="policy-card empty h-20 rounded-lg"></div>
-                    <div class="policy-card fascist h-20 rounded-lg"></div>
+                    <div class="policy-card empty h-20 rounded-lg"></div>
                     <div class="policy-card empty h-20 rounded-lg"></div>
                     <div class="policy-card empty h-20 rounded-lg"></div>
                     <div class="policy-card empty h-20 rounded-lg flex items-center justify-center">
@@ -96,16 +99,11 @@
             </div>
         </section>
 
-        <!-- Гравці -->
-        <section id="players" class="mb-6">
+        <!-- Гравці (буде заповнено динамічно) -->
+        <section id="players-section" class="mb-6">
             <h2 class="text-lg font-semibold mb-2">Гравці</h2>
-            <div class="space-y-2">
-                <div class="player-card p-3 rounded-lg flex justify-between items-center"><span>Гравець 1
-                        (Президент)</span> <span class="text-xs text-gray-400">ID: 123</span></div>
-                <div class="player-card p-3 rounded-lg flex justify-between items-center"><span>Гравець 2
-                        (Канцлер)</span> <span class="text-xs text-gray-400">ID: 456</span></div>
-                <div class="player-card p-3 rounded-lg flex justify-between items-center"><span>Гравець 3</span> <span
-                        class="text-xs text-gray-400">ID: 789</span></div>
+            <div id="players-list" class="space-y-2">
+                <p class="text-gray-400">Очікування даних про гравців...</p>
             </div>
         </section>
 
@@ -124,40 +122,63 @@
     <script>
         const tg = window.Telegram.WebApp;
 
-        // Ініціалізуємо додаток
-        tg.ready();
-        tg.expand(); // Розгортаємо на весь екран
+        // Функція для рендерингу списку гравців
+        function renderPlayers(players) {
+            const playersListDiv = document.getElementById('players-list');
+            playersListDiv.innerHTML = ''; // Очищуємо список
 
-        // Показуємо інформацію про користувача
-        const userInfo = document.getElementById('user-info');
-        if (tg.initDataUnsafe.user) {
-            userInfo.textContent = `Гравець: ${tg.initDataUnsafe.user.first_name}`;
+            if (!players || players.length === 0) {
+                playersListDiv.innerHTML = '<p class="text-gray-400">Ще немає гравців.</p>';
+                return;
+            }
+
+            players.forEach(player => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = 'player-card p-3 rounded-lg flex justify-between items-center';
+                playerDiv.innerHTML = `<span>${player.full_name}</span> <span class="text-xs text-gray-400">ID: ${player.user_id}</span>`;
+                playersListDiv.appendChild(playerDiv);
+            });
         }
 
         // Функція для надсилання даних боту
         function sendAction(action, value) {
             const data = { action, value };
             tg.sendData(JSON.stringify(data));
-            // Можна закрити додаток після дії
-            // tg.close(); 
         }
 
-        // Навішуємо обробники на кнопки
-        document.getElementById('vote-ja-btn').addEventListener('click', () => {
-            sendAction('vote', 'ja');
-        });
+        // Головна функція ініціалізації
+        function initializeApp() {
+            tg.ready();
+            tg.expand();
+            tg.MainButton.setText("Закрити гру").show().onClick(() => tg.close());
 
-        document.getElementById('vote-nein-btn').addEventListener('click', () => {
-            sendAction('vote', 'nein');
-        });
+            const userInfo = document.getElementById('user-info');
+            if (tg.initDataUnsafe.user) {
+                userInfo.textContent = `Гравець: ${tg.initDataUnsafe.user.first_name}`;
+            }
 
-        // Налаштовуємо головну кнопку Telegram
-        tg.MainButton.setText("Закрити гру");
-        tg.MainButton.show();
-        tg.MainButton.onClick(() => {
-            tg.close();
-        });
+            // Отримуємо та парсимо дані про гру з URL
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const gameStateParam = urlParams.get('game_state');
+                if (gameStateParam) {
+                    const gameState = JSON.parse(gameStateParam);
+                    renderPlayers(gameState.players);
+                } else {
+                    renderPlayers([]); // Якщо даних немає, показуємо порожній список
+                }
+            } catch (e) {
+                console.error("Помилка парсингу даних гри:", e);
+                renderPlayers([]);
+            }
+        }
 
+        // Обробники кнопок
+        document.getElementById('vote-ja-btn').addEventListener('click', () => sendAction('vote', 'ja'));
+        document.getElementById('vote-nein-btn').addEventListener('click', () => sendAction('vote', 'nein'));
+
+        // Запускаємо ініціалізацію
+        initializeApp();
     </script>
 </body>
 
