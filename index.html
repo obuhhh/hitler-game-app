@@ -125,13 +125,11 @@
         // Функція для рендерингу списку гравців
         function renderPlayers(players) {
             const playersListDiv = document.getElementById('players-list');
-            playersListDiv.innerHTML = ''; // Очищуємо список
-
+            playersListDiv.innerHTML = '';
             if (!players || players.length === 0) {
                 playersListDiv.innerHTML = '<p class="text-gray-400">Ще немає гравців.</p>';
                 return;
             }
-
             players.forEach(player => {
                 const playerDiv = document.createElement('div');
                 playerDiv.className = 'player-card p-3 rounded-lg flex justify-between items-center';
@@ -143,26 +141,31 @@
         // Функція для надсилання даних боту
         function sendAction(action, value) {
             const data = { action, value };
-            tg.sendData(JSON.stringify(data));
+            const jsonString = JSON.stringify(data);
+
+            // Спроба надіслати дані
+            tg.sendData(jsonString);
+
+            // --- ДОДАНО ДІАГНОСТИЧНЕ СПОВІЩЕННЯ ---
+            // Це сповіщення з'явиться, якщо функція викликається.
+            tg.showAlert(`ДІАГНОСТИКА:\n\nСпроба надіслати дані:\nAction: ${action}\nValue: ${value}`);
         }
 
         // Головна функція ініціалізації
         function initializeApp() {
-            tg.ready();
-            tg.expand();
-            tg.MainButton.setText("Закрити гру").show().onClick(() => tg.close());
-
-            const userInfo = document.getElementById('user-info');
-            if (tg.initDataUnsafe.user) {
-                userInfo.textContent = `Гравець: ${tg.initDataUnsafe.user.first_name}`;
-            }
-
-            // Отримуємо та парсимо дані про гру з URL
             try {
+                tg.ready();
+                tg.expand();
+                tg.MainButton.setText("Закрити гру").show().onClick(() => tg.close());
+
+                const userInfo = document.getElementById('user-info');
+                if (tg.initDataUnsafe.user) {
+                    userInfo.textContent = `Гравець: ${tg.initDataUnsafe.user.first_name}`;
+                }
+
                 const urlParams = new URLSearchParams(window.location.search);
                 const gameStateParam = urlParams.get('game_state');
                 if (gameStateParam) {
-                    // --- ВИПРАВЛЕНО: Спочатку розкодовуємо, потім парсимо ---
                     const decodedGameState = decodeURIComponent(gameStateParam);
                     const gameState = JSON.parse(decodedGameState);
                     renderPlayers(gameState.players);
@@ -170,8 +173,8 @@
                     renderPlayers([]);
                 }
             } catch (e) {
-                console.error("Помилка парсингу даних гри:", e);
-                renderPlayers([]);
+                console.error("Помилка ініціалізації:", e);
+                tg.showAlert(`Помилка ініціалізації: ${e.message}`);
             }
         }
 
