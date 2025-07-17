@@ -162,10 +162,12 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const gameStateParam = urlParams.get('game_state');
                 if (gameStateParam) {
-                    const gameState = JSON.parse(gameStateParam);
+                    // --- ВИПРАВЛЕНО: Спочатку розкодовуємо, потім парсимо ---
+                    const decodedGameState = decodeURIComponent(gameStateParam);
+                    const gameState = JSON.parse(decodedGameState);
                     renderPlayers(gameState.players);
                 } else {
-                    renderPlayers([]); // Якщо даних немає, показуємо порожній список
+                    renderPlayers([]);
                 }
             } catch (e) {
                 console.error("Помилка парсингу даних гри:", e);
